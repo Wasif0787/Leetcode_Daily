@@ -1,46 +1,70 @@
 class Solution {
-    public int findCheapestPrice(int n, int[][] flights, int src, int dst, int k) {
-        int[] distance = new int[n];
-        Arrays.fill(distance, Integer.MAX_VALUE);
+    static class Edge {
+        int src;
+        int dest;
+        int weight;
 
-        Map<Integer, List<int[]>> adj = new HashMap<>();
-
-        for (int[] flight : flights) {
-            int u = flight[0];
-            int v = flight[1];
-            int cost = flight[2];
-
-            adj.computeIfAbsent(u, key -> new ArrayList<>()).add(new int[]{v, cost});
+        public Edge(int src, int dest, int weight) {
+            this.src = src;
+            this.dest = dest;
+            this.weight = weight;
         }
+    }
 
-        Queue<int[]> queue = new LinkedList<>();
-        queue.offer(new int[]{src, 0});
-        distance[src] = 0;
+    static class Info {
+        int v;
+        int cost;
+        int stops;
 
-        int level = 0;
+        public Info(int v, int cost, int stops) {
+            this.v = v;
+            this.cost = cost;
+            this.stops = stops;
+        }
+    }
 
-        while (!queue.isEmpty() && level <= k) {
-            int size = queue.size();
+    static void createGraph(int[][] flights, ArrayList<ArrayList<Edge>> graph,int n) {
+        for (int i = 0; i < n; i++) {
+            graph.add(new ArrayList<>()); 
+        }
+        for (int[] flight : flights) {
+            int src = flight[0];
+            int dest = flight[1];
+            int weight = flight[2];
+            graph.get(src).add(new Edge(src, dest, weight));
+        }
+    }
 
-            for (int i = 0; i < size; i++) {
-                int[] current = queue.poll();
-                int u = current[0];
-                int d = current[1];
-
-                List<int[]> neighbors = adj.getOrDefault(u, Collections.emptyList());
-                for (int[] neighbor : neighbors) {
-                    int v = neighbor[0];
-                    int cost = neighbor[1];
-
-                    if (distance[v] > d + cost) {
-                        distance[v] = d + cost;
-                        queue.offer(new int[]{v, d + cost});
-                    }
+    public int findCheapestPrice(int n, int[][] flights, int src, int dest, int k) {
+        ArrayList<ArrayList<Edge>> graph = new ArrayList<>();
+        createGraph(flights, graph,n);
+        int dist[] = new int[n];
+        for (int i = 0; i < n; i++) {
+            if (i != src) {
+                dist[i] = Integer.MAX_VALUE;
+            }
+        }
+        Queue<Info> q = new LinkedList<>();
+        q.add(new Info(src, 0, 0));
+        while (!q.isEmpty()) {
+            Info curr = q.remove();
+            if (curr.stops > k) {
+                break;
+            }
+            for (int i = 0; i < graph.get(curr.v).size(); i++) {
+                Edge e = graph.get(curr.v).get(i);
+                int u = e.src;
+                int v = e.dest;
+                int wt = e.weight;
+                if (curr.cost + wt < dist[v] && curr.stops <= k) {
+                    dist[v] = curr.cost + wt;
+                    q.add(new Info(v, dist[v], curr.stops + 1));
                 }
             }
-            level++;
         }
-
-        return distance[dst] == Integer.MAX_VALUE ? -1 : distance[dst];
+        if (dist[dest] == Integer.MAX_VALUE) {
+            return -1;
+        }
+        return dist[dest];
     }
 }
